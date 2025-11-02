@@ -1,2 +1,27 @@
-# Svitlo-UA-Power-Outages
-Svitlo UA Power Outages – custom Home Assistant integration that provides information about scheduled electricity outages in Ukraine. The integration retrieves data from official and volunteer sources (Yasno API and the Energy-UA website), and creates sensors and a calendar with outage schedules for your selected region and outage group.
+# Інтеграція «Світло» для Home Assistant
+
+**Світло** (домен інтеграції: `svitlo_ua`) – кастомна HACS-інтеграція, що дозволяє моніторити графіки відключень електрики за допомогою API постачальників. Підтримується офіційний API Yasno (для Києва та Дніпра):contentReference[oaicite:0]{index=0} і допоміжні джерела (наприклад, [EnergyUA](https://energy-ua.info)) для інших регіонів.
+
+## Можливості
+
+- Асинхронний збір даних за допомогою `DataUpdateCoordinator` (оновлення кожні 5 хвилин).
+- Налаштування через ГУІ: оберіть свій регіон, постачальника (якщо є вибір) і вашу чергу відключень.
+- Створює датчики та календар:
+  - `binary_sensor.outage_now` — показує, чи зараз відбувається відключення.
+  - `sensor.time_to_next_outage` — кількість хвилин до найближчого відключення.
+  - `sensor.next_outage_start` — час початку наступного відключення (має тип timestamp).
+  - `sensor.next_power_on` — час, коли наступне відключення завершиться (коли з’явиться світло).
+  - `calendar.outages` — календар з запланованими відключеннями (події на сьогодні і завтра).
+
+```yaml
+# Приклад використання даних сенсорів в автоматизації:
+automation:
+  - alias: "Повідомлення про відключення"
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.outage_now
+        to: "on"
+    action:
+      - service: notify.mobile_app_myphone
+        data:
+          message: "Увага: світло щойно вимкнено!"
