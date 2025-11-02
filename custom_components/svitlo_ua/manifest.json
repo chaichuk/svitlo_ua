@@ -1,16 +1,13 @@
 {
-  "domain": "svitlo_ua",
-  "name": "Svitlo UA Power Outages",
-  "version": "1.0.0",
-  "config_flow": true,
-  "documentation": "https://github.com/yourusername/svitlo_ua", 
-  "requirements": [
-    "beautifulsoup4>=4.12.0"
-  ],
-  "dependencies": [],
-  "codeowners": [
-    "@chaichuk"
-  ],
-  "iot_class": "cloud_polling",
-  "integration_type": "hub"
+    "domain": "svitlo_ua",
+    "name": "Світло",
+    "version": "1.0.0",
+    "documentation": "https://github.com/yourname/svitlo_ua",
+    "requirements": [],
+    "codeowners": [
+        "@your_github"
+    ],
+    "config_flow": true,
+    "integration_type": "hub",
+    "iot_class": "cloud_polling"
 }
