@@ -1,0 +1,12 @@
+{
+  "domain": "svitlo_live",
+  "name": "Svitlo.live Schedules",
+  "version": "1.0.0",
+  "documentation": "https://github.com/yourname/svitlo_live",
+  "issue_tracker": "https://github.com/yourname/svitlo_live/issues",
+  "dependencies": [],
+  "codeowners": ["@chaichuk"],
+  "iot_class": "cloud_polling",
+  "requirements": ["beautifulsoup4>=4.12.0", "aiohttp"],
+  "config_flow": true
+}
