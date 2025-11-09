@@ -28,7 +28,7 @@ blueprint:
     
     title_text:
       name: Заголовок повідомлення
-      default: "⚡Відключення електроенергії⚡"
+      default: "⚡Відключення електроенергії"
       selector:
         text:
 
