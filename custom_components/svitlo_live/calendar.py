@@ -9,6 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
+from homeassistant.helpers import device_registry as dr  # ⬅️ додано
 
 from .const import DOMAIN
 
@@ -22,17 +23,26 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([SvitloCalendar(coordinator)])
+    # ⬇️ передаємо entry, щоб за бажанням у майбутньому тягнути options — не завадить
+    async_add_entities([SvitloCalendar(coordinator, entry)])
 
 
 class SvitloCalendar(CoordinatorEntity, CalendarEntity):
     """Календар відключень світла для конкретного регіону/черги."""
 
-    def __init__(self, coordinator) -> None:
+    def __init__(self, coordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = f"svitlo_calendar_{coordinator.region}_{coordinator.queue}"
-        self._attr_name = f"Svitlo • {coordinator.region} / {coordinator.queue}"
+        self._entry = entry
+        self._region = getattr(coordinator, "region", "region")
+        self._queue = getattr(coordinator, "queue", "queue")
+
+        self._attr_unique_id = f"svitlo_calendar_{self._region}_{self._queue}"
         self._event: Optional[CalendarEvent] = None
+
+    # Динамічне ім'я ентіті: підтягуємо назву пристрою, якщо користувач її змінив
+    @property
+    def name(self) -> str:
+        return f"Світло • {self._device_label()}"
 
     # ---- обов'язково для стану календаря ----
     @property
@@ -61,13 +71,12 @@ class SvitloCalendar(CoordinatorEntity, CalendarEntity):
 
     @property
     def device_info(self) -> dict[str, Any]:
-        region = getattr(self.coordinator, "region", "region")
-        queue = getattr(self.coordinator, "queue", "queue")
+        # ВАЖЛИВО: identifiers повинні збігатися з тим, що використовуєш для пошуку пристрою
         return {
-            "identifiers": {(DOMAIN, f"{region}_{queue}")},
+            "identifiers": {(DOMAIN, f"{self._region}_{self._queue}")},
             "manufacturer": "svitlo.live",
-            "model": f"Queue {queue}",
-            "name": f"Svitlo • {region} / {queue}",
+            "model": f"Queue {self._queue}",
+            "name": f"Світло • {self._region} / {self._queue}",
         }
 
     # ---- події з координатора ----
@@ -144,10 +153,29 @@ class SvitloCalendar(CoordinatorEntity, CalendarEntity):
         start_utc = dt_util.as_utc(start_local)
         end_utc = dt_util.as_utc(end_local)
 
-       
+        prefix = f"[{self._device_label()}]"
         return CalendarEvent(
-            summary="❌ Power outage ❌",
+            summary=f"{prefix} ❌ Відключення електроенергії",
             start=start_utc,
             end=end_utc,
-            description=f"No electricity {start_local.strftime('%H:%M')}–{end_local.strftime('%H:%M')}",
+            description=f"{prefix} Немає світла {start_local.strftime('%H:%M')}–{end_local.strftime('%H:%M')}",
         )
+
+    # -------------------------
+    # Допоміжне: назва з Device Registry або дефолт
+    # -------------------------
+    def _device_label(self) -> str:
+        """Повертає ім'я пристрою з реєстру (name_by_user -> name) або дефолт."""
+        try:
+            dev_reg = dr.async_get(self.hass)
+            device = dev_reg.async_get_device(identifiers={(DOMAIN, f"{self._region}_{self._queue}")})
+            if device:
+                # name_by_user має пріоритет, якщо користувач перейменував
+                if device.name_by_user:
+                    return device.name_by_user
+                if device.name:
+                    return device.name
+        except Exception:
+            # не драматизуємо, просто впадемо на дефолт
+            pass
+        return f"{self._region} / {self._queue}"
